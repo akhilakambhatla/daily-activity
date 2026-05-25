@@ -1,0 +1,61 @@
+name: Daily Contribution
+
+on:
+  schedule:
+    # Runs every day at 9:00 AM UTC (adjust timezone as needed)
+    # Format: minute hour day month day-of-week
+    - cron: '0 9 * * *'
+  
+  workflow_dispatch:  # Allows you to manually trigger from GitHub Actions tab
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Generate daily activity
+        run: |
+          # Get current date and time
+          DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          DAY=$(date '+%A')
+          
+          # Create or append to activity log
+          echo "---" >> daily-activity.md
+          echo "**Date:** $DATE" >> daily-activity.md
+          echo "**Day:** $DAY" >> daily-activity.md
+          echo "**Status:** Active ✅" >> daily-activity.md
+          echo "" >> daily-activity.md
+          
+          # Also update a simple counter
+          if [ -f activity-count.txt ]; then
+            COUNT=$(cat activity-count.txt)
+            COUNT=$((COUNT + 1))
+          else
+            COUNT=1
+          fi
+          echo $COUNT > activity-count.txt
+          
+          echo "Activity day #$COUNT logged successfully!"
+      
+      - name: Commit and push changes
+        run: |
+          git add daily-activity.md activity-count.txt
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🚀 Daily activity update: $(date '+%Y-%m-%d')"
+            git push
+            echo "Changes pushed successfully!"
+          fi
